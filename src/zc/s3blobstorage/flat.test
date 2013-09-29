@@ -1,0 +1,26 @@
+Flat blob layout
+================
+
+In the flat blob layout, all blobs are stored in a single
+directory. The file name of each blob consistents of an 16-character
+hext object id and a 16-character hex serial number/tid and a ".blob"
+suffix.
+
+    >>> import zc.s3blobstorage.flat # registers the layour with zodb.blob
+
+    >>> import ZODB.blob, ZODB.utils, ZODB.TimeStamp
+
+    >>> flat = ZODB.blob.LAYOUTS['flat']
+
+    >>> oid = ZODB.utils.p64(123456)
+    >>> tid = ZODB.TimeStamp.TimeStamp(2013, 9, 29, 12, 25, 36.123).raw()
+
+    >>> flat.oid_to_path(oid) == oid.encode('hex')
+    True
+
+    >>> flat.path_to_oid(flat.oid_to_path(oid)) == oid
+    True
+
+    >>> flat.getBlobFilePath(oid, tid) == (
+    ...     oid.encode('hex') + tid.encode('hex') + '.blob')
+    True
