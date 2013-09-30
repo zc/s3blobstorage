@@ -1,0 +1,67 @@
+We provide a file storage that used the flat blob layout and that,
+when packing, doesn't remove blob files, but optionally records blobs
+to be removed in the blob directory.
+
+    >>> import ZODB.blob, zc.s3blobstorage.file
+    >>> fs = zc.s3blobstorage.file.FileStorage('t.fs', blob_dir='blobs')
+
+    >>> db = ZODB.DB(fs)
+    >>> with db.transaction() as conn:
+    ...     conn.root.b1 = ZODB.blob.Blob("version 1")
+
+    >>> now += 86400
+
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open("w") as f:
+    ...        f.write("version 2")
+
+    >>> import os
+    >>> for f in sorted(os.listdir('blobs')):
+    ...     print f
+    .layout
+    000000000000000103a1bd5c1bd19423.blob
+    000000000000000103a1c89c1bd19422.blob
+    tmp
+
+Now, we'll pack:
+
+    >>> db.pack()
+
+We end up with a removed file that tells us what to remove:
+
+    >>> for f in sorted(os.listdir('blobs')):
+    ...     print f
+    .layout
+    000000000000000103a1bd5c1bd19423.blob
+    000000000000000103a1c89c1bd19422.blob
+    removed1380627606.blob
+    tmp
+
+    >>> with open(os.path.join('blobs', 'removed1380627606.blob')) as f:
+    ...     print f.read(),
+    000000000000000103a1bd5c1bd19423
+
+Now, we garbageify and collect:
+
+    >>> now += 86400
+
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open("w") as f:
+    ...        del conn.root.b1
+
+    >>> db.pack()
+
+    >>> for f in sorted(os.listdir('blobs')):
+    ...     print f
+    .layout
+    000000000000000103a1bd5c1bd19423.blob
+    000000000000000103a1c89c1bd19422.blob
+    000000000000000103a1ce3c1bd19422.blob
+    removed1380627606.blob
+    removed1380714006.blob
+    tmp
+
+    >>> with open(os.path.join('blobs', 'removed1380714006.blob')) as f:
+    ...     print f.read(),
+    0000000000000001
+    0000000000000001

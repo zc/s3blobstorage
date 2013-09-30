@@ -3,10 +3,10 @@ import ZODB.blob
 class FlatLayout(object):
 
     def oid_to_path(self, oid):
-        return oid.encode('hex')
+        return ''
 
     def path_to_oid(self, path):
-        return path.decode('hex')
+        raise NotImplementedError("all oids are in a single directory")
 
     def getBlobFilePath(self, oid, tid):
         return oid.encode('hex') + tid.encode('hex') + '.blob'

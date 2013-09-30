@@ -15,11 +15,13 @@ suffix.
     >>> oid = ZODB.utils.p64(123456)
     >>> tid = ZODB.TimeStamp.TimeStamp(2013, 9, 29, 12, 25, 36.123).raw()
 
-    >>> flat.oid_to_path(oid) == oid.encode('hex')
-    True
+    >>> flat.oid_to_path(oid)
+    ''
 
     >>> flat.path_to_oid(flat.oid_to_path(oid)) == oid
-    True
+    Traceback (most recent call last):
+    ...
+    NotImplementedError: all oids are in a single directory
 
     >>> flat.getBlobFilePath(oid, tid) == (
     ...     oid.encode('hex') + tid.encode('hex') + '.blob')
