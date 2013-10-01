@@ -23,6 +23,16 @@ to be removed in the blob directory.
     000000000000000103a1c89c1bd19422.blob
     tmp
 
+    >>> import sys
+    >>> def print_file(*path):
+    ...     with open(os.path.join(*path)) as f:
+    ...         sys.stdout.write(f.read())
+
+    >>> print_file('blobs', '.layout')
+    flat
+    >>> print_file('blobs', '000000000000000103a1c89c1bd19422.blob')
+    version 2
+
 Now, we'll pack:
 
     >>> db.pack()
@@ -37,8 +47,7 @@ We end up with a removed file that tells us what to remove:
     removed1380627606.blob
     tmp
 
-    >>> with open(os.path.join('blobs', 'removed1380627606.blob')) as f:
-    ...     print f.read(),
+    >>> print_file('blobs', 'removed1380627606.blob')
     000000000000000103a1bd5c1bd19423
 
 Now, we garbageify and collect:
@@ -61,23 +70,29 @@ Now, we garbageify and collect:
     removed1380714006.blob
     tmp
 
-    >>> with open(os.path.join('blobs', 'removed1380714006.blob')) as f:
-    ...     print f.read(),
+    >>> print_file('blobs', 'removed1380714006.blob')
     0000000000000001
     0000000000000001
 
+
+.. cleanup:
+
     >>> db.close()
+
+    >>> import shutil
+    >>> shutil.rmtree('blobs')
+    >>> os.remove('t.fs')
 
 
 Disabling blob packing
 ----------------------
 
 With blobs stores in S3, we probably only want to pack blobs on one replica.
-We can disable blob packing using the pack_blob option:
+We can disable blob packing using the pack_blobs option:
 
-    >>> fs2 = zc.s3blobstorage.file.FileStorage(
-    ...     't2.fs', blob_dir='blobs2', pack_blob=False)
-    >>> db = ZODB.DB(fs2)
+    >>> fs = zc.s3blobstorage.file.FileStorage(
+    ...     't.fs', blob_dir='blobs', pack_blobs=False)
+    >>> db = ZODB.DB(fs)
 
     >>> with db.transaction() as conn:
     ...     conn.root.b1 = ZODB.blob.Blob("version 1")
@@ -92,9 +107,86 @@ We can disable blob packing using the pack_blob option:
 
 We end up with a removed file that tells us what to remove:
 
-    >>> for f in sorted(os.listdir('blobs2')):
+    >>> for f in sorted(os.listdir('blobs')):
     ...     print f
     .layout
     000000000000000103a1ce3c1bd19423.blob
     000000000000000103a1d3dc1bd19422.blob
+    tmp
+
+.. cleanup:
+
+    >>> db.close()
+    >>> shutil.rmtree('blobs')
+    >>> os.remove('t.fs')
+
+Configuration
+-------------
+
+We can configure file storages with ZConfig::
+
+    %import zc.s3blobstorage
+
+    <zodb>
+      <s3blobfilestorage>
+        path t.fs
+        blob-dir blobs
+      </s3blobfilestorage>
+    </zodb>
+
+.. -> config
+
+    >>> import ZODB.config
+    >>> db = ZODB.config.databaseFromString(config)
+    >>> with db.transaction() as conn:
+    ...     conn.root.b1 = ZODB.blob.Blob("version 1")
+    >>> now += 3000
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open("w") as f:
+    ...        f.write("version 2")
+
+    >>> db.pack()
+    >>> for f in sorted(os.listdir('blobs')):
+    ...     print f
+    .layout
+    000000000000000103a1d3dc1bd19423.blob
+    000000000000000103a1d40e1bd19422.blob
+    removed1380803406.blob
+    tmp
+
+.. cleanup:
+
+    >>> db.close()
+    >>> shutil.rmtree('blobs')
+    >>> os.remove('t.fs')
+
+Again with blob packaging disabled::
+
+    %import zc.s3blobstorage
+
+    <zodb>
+      <s3blobfilestorage>
+        path t.fs
+        blob-dir blobs
+        pack-blobs false
+      </s3blobfilestorage>
+    </zodb>
+
+.. -> config
+
+    >>> import ZODB.config
+    >>> db = ZODB.config.databaseFromString(config)
+    >>> with db.transaction() as conn:
+    ...     conn.root.b1 = ZODB.blob.Blob("version 1")
+    >>> now += 3000
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open("w") as f:
+    ...        f.write("version 2")
+
+    >>> db.pack()
+    >>> for f in sorted(os.listdir('blobs')):
+    ...     print f
+    .layout
+    000000000000000103a1d40e1bd19423.blob
+    000000000000000103a1d4401bd19422.blob
     tmp
