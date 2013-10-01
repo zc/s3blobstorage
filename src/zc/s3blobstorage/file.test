@@ -65,3 +65,36 @@ Now, we garbageify and collect:
     ...     print f.read(),
     0000000000000001
     0000000000000001
+
+    >>> db.close()
+
+
+Disabling blob packing
+----------------------
+
+With blobs stores in S3, we probably only want to pack blobs on one replica.
+We can disable blob packing using the pack_blob option:
+
+    >>> fs2 = zc.s3blobstorage.file.FileStorage(
+    ...     't2.fs', blob_dir='blobs2', pack_blob=False)
+    >>> db = ZODB.DB(fs2)
+
+    >>> with db.transaction() as conn:
+    ...     conn.root.b1 = ZODB.blob.Blob("version 1")
+
+    >>> now += 86400
+
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open("w") as f:
+    ...        f.write("version 2")
+
+    >>> db.pack()
+
+We end up with a removed file that tells us what to remove:
+
+    >>> for f in sorted(os.listdir('blobs2')):
+    ...     print f
+    .layout
+    000000000000000103a1ce3c1bd19423.blob
+    000000000000000103a1d3dc1bd19422.blob
+    tmp

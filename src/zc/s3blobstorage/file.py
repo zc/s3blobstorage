@@ -5,18 +5,20 @@ import ZODB.FileStorage
 
 class FileStorage(ZODB.FileStorage.FileStorage):
 
-    def __init__(self, *args, **kw):
-        ZODB.FileStorage.FileStorage.__init__(self, *args, **kw)
+    def __init__(self, file_name, blob_dir, pack_blob=True, **kw):
+        ZODB.FileStorage.FileStorage.__init__(
+            self, file_name, blob_dir=blob_dir, **kw)
 
         original_packer = self.packer
         def packer(storage, referencesf, stop, gc):
             result = original_packer(storage, referencesf, stop, gc)
             removed = os.path.join(storage.blob_dir, '.removed')
             if os.path.exists(removed):
-                os.rename(
-                    removed,
-                    os.path.join(storage.blob_dir,
-                                 'removed%s.blob' % long(time.time())))
+                if pack_blob:
+                    os.rename(
+                        removed,
+                        os.path.join(storage.blob_dir,
+                                     'removed%s.blob' % long(time.time())))
                 open(removed, 'w').close()
 
             return result
