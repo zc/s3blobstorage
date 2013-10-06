@@ -13,8 +13,13 @@
 ##############################################################################
 name, version = 'zc.s3blobstorage', '0'
 
-install_requires = ['setuptools', 'ZODB']
-extras_require = dict(test=['manuel', 'mock', 'zope.testing'])
+install_requires = ['setuptools', 'requests']
+extras_require = dict(
+    test=['manuel', 'mock', 'zope.testing', 'bobo', 'zc.wsgidriver', 'zc.zk'],
+    zk = ['zc.zk [static]'],
+    zodb3 = ['ZODB3'],
+    zodb = ['ZEO'],
+    )
 
 entry_points = """
 """

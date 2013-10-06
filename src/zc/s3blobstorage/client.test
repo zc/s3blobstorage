@@ -1,0 +1,75 @@
+We have a client-storage that fetches blobs over http.
+
+In addition to the normal ClientStorage options, it takes an iterable
+of URLs to request blobs from.
+
+    >>> import zc.s3blobstorage.file, zc.s3blobstorage.client, ZODB, ZEO
+
+First, we'll start a storage server, based on an s3blobstorage file
+storage configuration::
+
+    %import zc.s3blobstorage
+
+    <s3blobfilestorage>
+      path t.fs
+      blob-dir blobs
+    </s3blobfilestorage>
+
+.. -> conf
+
+    >>> addr, stop_server = ZEO.server(storage_conf=conf)
+
+Create a blob cache directory and start a web server on it:
+
+    >>> import os, zc.wsgidriver, bobo
+    >>> os.mkdir('cache')
+    >>> app = bobo.Application(
+    ...     bobo_resources = "boboserver:static('', 'cache')")
+    >>> blob_server = 'http://localhost:%s/' % zc.wsgidriver.start_server(app)
+
+
+ Create a client and do some transactions:
+
+    >>> client = zc.s3blobstorage.client.ClientStorage(
+    ...     addr, blob_dir='cblobs', blob_servers=[blob_server], wait_timeout=9)
+
+    >>> db = ZODB.DB(client)
+    >>> with db.transaction() as conn:
+    ...     conn.root.b1 = ZODB.blob.Blob("version 1")
+    >>> now += 3000
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open("w") as f:
+    ...        f.write("version 2")
+    >>> db.close()
+
+Move the blobs to a separate "cache" to mimic the blob server:
+
+    >>> for n in os.listdir('blobs'):
+    ...     if n.endswith('.blob'):
+    ...         os.rename(os.path.join('blobs', n), os.path.join('cache', n))
+
+Create a new client and verify that it can get and update blobs:
+
+    >>> db = zc.s3blobstorage.client.DB(
+    ...     addr, blob_dir='cblobs2', blob_servers=[blob_server])
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open() as f:
+    ...        print f.read()
+    version 2
+
+    >>> len([n for n in os.listdir('blobs') if n.endswith('.blob')])
+    0
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open("w") as f:
+    ...        f.write("version 3")
+    >>> len([n for n in os.listdir('blobs') if n.endswith('.blob')])
+    1
+
+    >>> db.close()
+
+.. cleanup
+
+    >>> client.close()
+    >>> stop_server()
+    >>> import requests
+    >>> _ = requests.get(blob_server + 'stop-testing-server')
