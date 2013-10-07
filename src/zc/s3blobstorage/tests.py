@@ -20,9 +20,11 @@ import manuel.doctest
 import manuel.testing
 import mock
 import os
+import zc.zk.testing
 
 def setUp(test):
     setupstack.setUpDirectory(test)
+    zc.zk.testing.setUp(test)
     test.globs['now'] = 1380541206.52
     def time():
         return test.globs['now']

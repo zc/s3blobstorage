@@ -25,13 +25,14 @@ Create a blob cache directory and start a web server on it:
     >>> os.mkdir('cache')
     >>> app = bobo.Application(
     ...     bobo_resources = "boboserver:static('', 'cache')")
-    >>> blob_server = 'http://localhost:%s/' % zc.wsgidriver.start_server(app)
+    >>> blob_server_port = zc.wsgidriver.start_server(app)
+    >>> blob_server = 'http://localhost:%s/' % blob_server_port
 
 
  Create a client and do some transactions:
 
     >>> client = zc.s3blobstorage.client.ClientStorage(
-    ...     addr, blob_dir='cblobs', blob_servers=[blob_server], wait_timeout=9)
+    ...     addr, blob_dir='cblobs', blob_servers=[blob_server])
 
     >>> db = ZODB.DB(client)
     >>> with db.transaction() as conn:
@@ -41,6 +42,8 @@ Create a blob cache directory and start a web server on it:
     ...     with conn.root.b1.open("w") as f:
     ...        f.write("version 2")
     >>> db.close()
+    >>> import shutil
+    >>> shutil.rmtree('cblobs')
 
 Move the blobs to a separate "cache" to mimic the blob server:
 
@@ -51,7 +54,7 @@ Move the blobs to a separate "cache" to mimic the blob server:
 Create a new client and verify that it can get and update blobs:
 
     >>> db = zc.s3blobstorage.client.DB(
-    ...     addr, blob_dir='cblobs2', blob_servers=[blob_server])
+    ...     addr, blob_dir='cblobs', blob_servers=[blob_server])
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open() as f:
     ...        print f.read()
@@ -66,10 +69,72 @@ Create a new client and verify that it can get and update blobs:
     1
 
     >>> db.close()
+    >>> shutil.rmtree('cblobs')
+
+    >>> for n in os.listdir('blobs'):
+    ...     if n.endswith('.blob'):
+    ...         os.rename(os.path.join('blobs', n), os.path.join('cache', n))
+
+ZooKeeper-based configuration
+=============================
+
+We can configure clients via ZooKeeper using the ZKClientStorage
+constructor. Given a ZooKeeper tree:
+
+   /db
+     /providers
+        /localhost:%s
+     /blobs
+       /providers
+          /localhost:%s
+
+.. -> tree
+
+A database node lists its ZEO server addresses under its ``providers``
+sub-node and it's blob servers under it's ``/blobs/providers``
+subnode.
+
+    >>> import zc.zk
+    >>> zk = zc.zk.ZK('zookeeper.example.com:2181')
+    >>> zk.import_tree(tree % (addr[1], blob_server_port))
+
+We only provide the database node. The subnodes are implied.
+
+    >>> client = zc.s3blobstorage.client.ZKClientStorage(
+    ...     'zookeeper.example.com:2181', '/db', blob_dir='cblobs')
+    >>> db = ZODB.DB(client)
+
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open() as f:
+    ...        print f.read()
+    version 3
+
+We can change the server address:
+
+    >>> old_blob_server = blob_server
+    >>> old_blob_server_port = blob_server_port
+    >>> blob_server_port = zc.wsgidriver.start_server(app)
+    >>> blob_server = 'http://localhost:%s/' % blob_server_port
+    >>> import requests
+    >>> _ = requests.get(old_blob_server + 'stop-testing-server')
+    >>> blob_server_port != old_blob_server_port
+    True
+
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open() as f:
+    ...        print f.read()
+    version 3
+
+    >>> db.close()
 
 .. cleanup
 
-    >>> client.close()
     >>> stop_server()
-    >>> import requests
     >>> _ = requests.get(blob_server + 'stop-testing-server')
+
+to-do
+=====
+
+- zconfig
+
+- ClientDisconnected exception when blob blob servers can't be connected to.

@@ -1,6 +1,7 @@
 import os
 import stat
 import requests
+import zc.zkzeo._client
 import ZEO.ClientStorage
 import ZEO.ServerStub
 import ZODB.POSException
@@ -55,3 +56,30 @@ class ClientStorage(ZEO.ClientStorage.ClientStorage):
 def DB(*args, **kw):
     import ZODB
     return ZODB.DB(ClientStorage(*args, **kw))
+
+def ZKClientStorage(zkaddr, path, *args, **kw):
+    zk = zc.zk.ZooKeeper(zkaddr)
+    ppath = path + '/providers'
+    addresses = zk.children(ppath)
+
+    blob_addresses = zk.children(path+'/blobs/providers')
+    blob_servers = []
+
+    @blob_addresses
+    def update_blob_servers(addrs):
+        blob_servers[:] = ['http://%s/' % addr for addr in addrs]
+
+    wait = kw.get('wait', kw.get('wait_for_server_on_startup', True))
+
+    # XXX lots of underware here
+    client = ClientStorage(
+        zc.zkzeo._client._wait_addresses(
+            addresses, zc.zkzeo._client.parse_addr, zkaddr, ppath, wait),
+        blob_servers,
+        *args, **kw)
+    return zc.zkzeo._client._client(addresses, client, zkaddr, ppath)
+
+
+def ZKDB(*args, **kw):
+    import ZODB
+    return ZODB.DB(ZKClientStorage(*args, **kw))
