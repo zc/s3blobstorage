@@ -119,6 +119,14 @@ We can change the server address:
     >>> _ = requests.get(old_blob_server + 'stop-testing-server')
     >>> blob_server_port != old_blob_server_port
     True
+
+    >>> def clear_client_blobs():
+    ...     for dir, _, files in os.walk('cblobs'):
+    ...         for file in files:
+    ...             if file.endswith('.blob'):
+    ...                 os.remove(os.path.join(dir, file))
+    >>> clear_client_blobs()
+
     >>> zk.import_tree(tree % (addr[1], blob_server_port), trim=True)
 
     >>> with db.transaction() as conn:
@@ -156,13 +164,21 @@ We can configure a zookeeper-based client using ZConfig::
     ...        print f.read()
     version 3
 
+Get ClientDisconnected if we can't talk to a blob server
+========================================================
+
+    >>> zk.import_tree(tree % (addr[1], blob_server_port+1), trim=True)
+    >>> clear_client_blobs()
+
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open() as f:
+    ...        print f.read()
+    Traceback (most recent call last):
+    ...
+    ClientDisconnected
+
     >>> db.close()
     >>> shutil.rmtree('cblobs')
-
-to-do
-=====
-
-- ClientDisconnected exception when blob blob servers can't be connected to.
 
 .. cleanup
 

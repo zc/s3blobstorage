@@ -31,8 +31,15 @@ class ClientStorage(ZEO.ClientStorage.ClientStorage):
 
     def downloadBlob(self, oid, serial):
         key = oid.encode('hex') + serial.encode('hex') + '.blob'
+
+        connected = False
         for server in self.blob_servers:
-            r = requests.get(server+key, stream=True)
+            try:
+                r = requests.get(server+key, stream=True)
+            except requests.ConnectionError:
+                continue
+
+            connected = True
             if r.status_code == 404:
                 continue
             if r.status_code != 200:
@@ -51,6 +58,9 @@ class ClientStorage(ZEO.ClientStorage.ClientStorage):
             os.rename(dl_filename, blob_filename)
             os.chmod(blob_filename, stat.S_IREAD)
             return
+
+        if not connected:
+            raise ZEO.Exceptions.ClientDisconnected
 
         raise ZODB.POSException.POSKeyError(oid, serial)
 
@@ -78,6 +88,7 @@ def ZKClientStorage(zkaddr, path, *args, **kw):
             addresses, zc.zkzeo._client.parse_addr, zkaddr, ppath, wait),
         blob_servers,
         *args, **kw)
+    client.zookeeper_blob_addresses = blob_addresses
     return zc.zkzeo._client._client(addresses, client, zkaddr, ppath)
 
 
