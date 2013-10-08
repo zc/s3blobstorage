@@ -15,4 +15,14 @@
     </key>
   </sectiontype>
 
+  <sectiontype
+      name="zks3blobclient"
+      datatype="zc.s3blobstorage.client.ZKConfig"
+      implements="ZODB.storage"
+      extends="zeoclient"
+      >
+    <key name="zookeeper" datatype="string" required="yes" />
+  </sectiontype>
+
 </component>
+

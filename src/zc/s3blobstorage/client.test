@@ -119,6 +119,7 @@ We can change the server address:
     >>> _ = requests.get(old_blob_server + 'stop-testing-server')
     >>> blob_server_port != old_blob_server_port
     True
+    >>> zk.import_tree(tree % (addr[1], blob_server_port), trim=True)
 
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open() as f:
@@ -126,15 +127,44 @@ We can change the server address:
     version 3
 
     >>> db.close()
+    >>> shutil.rmtree('cblobs')
+
+
+ZConfig support
+===============
+
+We can configure a zookeeper-based client using ZConfig::
+
+
+    %import zc.s3blobstorage
+
+    <zodb>
+      <zks3blobclient>
+        zookeeper zookeeper.example.com:2181
+        server /db
+        blob-dir cblobs
+      </zks3blobclient>
+    </zodb>
+
+.. -> config
+
+    >>> import ZODB.config
+    >>> db = ZODB.config.databaseFromString(config)
+
+    >>> with db.transaction() as conn:
+    ...     with conn.root.b1.open() as f:
+    ...        print f.read()
+    version 3
+
+    >>> db.close()
+    >>> shutil.rmtree('cblobs')
+
+to-do
+=====
+
+- ClientDisconnected exception when blob blob servers can't be connected to.
 
 .. cleanup
 
     >>> stop_server()
     >>> _ = requests.get(blob_server + 'stop-testing-server')
-
-to-do
-=====
-
-- zconfig
-
-- ClientDisconnected exception when blob blob servers can't be connected to.

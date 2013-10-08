@@ -4,6 +4,7 @@ import requests
 import zc.zkzeo._client
 import ZEO.ClientStorage
 import ZEO.ServerStub
+import ZODB.config
 import ZODB.POSException
 
 class ServerError(Exception):
@@ -83,3 +84,47 @@ def ZKClientStorage(zkaddr, path, *args, **kw):
 def ZKDB(*args, **kw):
     import ZODB
     return ZODB.DB(ZKClientStorage(*args, **kw))
+
+
+class ZKConfig(ZODB.config.BaseConfig):
+
+    def __init__(self, config):
+        self.config = config
+        self.name = config.getSectionName()
+
+    def open(self):
+        paths = [server.address for server in self.config.server]
+        if len(paths) > 1:
+            raise TypeError("Only one server option is allowed")
+        path = paths[0]
+        if not isinstance(path, basestring) or not path[0] == '/':
+            raise TypeError("server must be a ZooKeeper path, %r" % path)
+
+        options = dict(
+            blob_dir=self.config.blob_dir,
+            shared_blob_dir=self.config.shared_blob_dir,
+            storage=self.config.storage,
+            cache_size=self.config.cache_size,
+            name=self.config.name,
+            client=self.config.client,
+            var=self.config.var,
+            min_disconnect_poll=self.config.min_disconnect_poll,
+            max_disconnect_poll=self.config.max_disconnect_poll,
+            wait=self.config.wait,
+            read_only=self.config.read_only,
+            read_only_fallback=self.config.read_only_fallback,
+            drop_cache_rather_verify=self.config.drop_cache_rather_verify,
+            username=self.config.username,
+            password=self.config.password,
+            realm=self.config.realm,
+            )
+
+        if self.config.blob_cache_size is not None:
+            options['blob_cache_size'] = self.config.blob_cache_size
+        if self.config.blob_cache_size_check is not None:
+            options['blob_cache_size_check'] = self.config.blob_cache_size_check
+        if self.config.client_label is not None:
+            options['client_label'] = self.config.client_label
+
+        return ZKClientStorage(self.config.zookeeper, path, **options)
+
