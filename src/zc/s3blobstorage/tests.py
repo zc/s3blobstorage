@@ -20,9 +20,15 @@ import manuel.doctest
 import manuel.testing
 import mock
 import os
+import unittest
 import zc.zk.testing
 
-def setUp(test):
+
+def setUpClient(test):
+    setupstack.setUpDirectory(test)
+    zc.zk.testing.setUp(test)
+
+def setUpFile(test):
     setupstack.setUpDirectory(test)
     zc.zk.testing.setUp(test)
     test.globs['now'] = 1380541206.52
@@ -31,11 +37,13 @@ def setUp(test):
     setupstack.context_manager(test, mock.patch("time.time", side_effect=time))
 
 def test_suite():
-    return manuel.testing.TestSuite(
-        manuel.doctest.Manuel() + manuel.capture.Manuel(),
-        *sorted(n
-                for n in os.listdir(os.path.dirname(__file__))
-                if n.endswith('.test')
-                ),
-        **dict(setUp=setUp, tearDown=setupstack.tearDown)
-        )
+    return unittest.TestSuite((
+        manuel.testing.TestSuite(
+            manuel.doctest.Manuel() + manuel.capture.Manuel(),
+            'file.test', 'flat.test',
+            setUp=setUpFile, tearDown=setupstack.tearDown),
+        manuel.testing.TestSuite(
+            manuel.doctest.Manuel() + manuel.capture.Manuel(),
+            'client.test',
+            setUp=setUpClient, tearDown=setupstack.tearDown),
+        ))
