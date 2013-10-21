@@ -14,7 +14,7 @@
 name, version = 'zc.s3blobstorage', '0'
 
 install_requires = ['setuptools', 'requests',
-                    'zc.zk [static]', 'zc.zkzeo']
+                    'zc.zk [static]', 'zc.zkzeo', 'boto']
 extras_require = dict(
     test=['manuel', 'mock', 'zope.testing', 'bobo', 'zc.wsgidriver'],
     zodb3 = ['ZODB3'],
