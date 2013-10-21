@@ -22,6 +22,8 @@ extras_require = dict(
     )
 
 entry_points = """
+[console_scripts]
+process_s3_blob_removes = zc.s3blobstorage.pack:main
 """
 
 from setuptools import setup
