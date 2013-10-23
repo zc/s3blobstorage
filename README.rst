@@ -23,7 +23,7 @@ This project provides:
 Changes
 *******
 
-0.1.0 (yyyy-mm-dd)
+0.1.0 (2013-10-23)
 ==================
 
 Initial release

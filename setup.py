@@ -11,7 +11,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-name, version = 'zc.s3blobstorage', '0'
+name, version = 'zc.s3blobstorage', '0.1.0'
 
 install_requires = ['setuptools', 'requests',
                     'zc.zk [static]', 'zc.zkzeo']
