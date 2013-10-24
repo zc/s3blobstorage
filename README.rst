@@ -23,6 +23,11 @@ This project provides:
 Changes
 *******
 
+0.1.1 (2013-10-24)
+==================
+
+Fixed packaging bug.
+
 0.1.0 (2013-10-23)
 ==================
 
