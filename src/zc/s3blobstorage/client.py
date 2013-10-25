@@ -111,6 +111,9 @@ class ZKConfig(ZODB.config.BaseConfig):
         if not isinstance(path, basestring) or not path[0] == '/':
             raise TypeError("server must be a ZooKeeper path, %r" % path)
 
+        if path.endswith('/providers'):
+            path = path[:-10]
+
         options = dict(
             blob_dir=self.config.blob_dir,
             shared_blob_dir=self.config.shared_blob_dir,
