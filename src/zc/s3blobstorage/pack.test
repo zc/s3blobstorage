@@ -1,5 +1,5 @@
 There's a script for packing s3 blobs.  It scans a given s3 bucket for
-keys of the form ``.removedTIMESTAMP.blob`` (where TIMESTAMP is string
+keys of the form ``.removedTIMESTAMP.blob`` (where TIMESTAMP is a string
 of digits representing a Unix timestamp).
 
 The script takes a bucket name and:
@@ -17,7 +17,7 @@ either have one level of folders, with a folder per storage, or a
 two-level structure with a folder for customer, or application, and a
 subfolder for each database within that customer or application.
 
-let's look at an example.  We have an s3 bucket with some blob data in
+Let's look at an example.  We have an s3 bucket with some blob data in
 it:
 
     >>> import boto.s3.connection
@@ -126,6 +126,9 @@ If we call again, there won't be anything to do:
     bucket blobs list foo/baz/.removed ''
     bucket blobs list my/ /
     bucket blobs list my/blobs/.removed ''
+
+    >>> len(bucket)
+    219
 
 If we don't pass days, then all .removed files will be processed:
 
