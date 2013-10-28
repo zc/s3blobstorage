@@ -37,7 +37,6 @@ Create a blob cache directory and start a web server on it:
     >>> db = ZODB.DB(client)
     >>> with db.transaction() as conn:
     ...     conn.root.b1 = ZODB.blob.Blob("version 1")
-    >>> now += 3000
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open("w") as f:
     ...        f.write("version 2")

@@ -14,7 +14,7 @@
 name, version = 'zc.s3blobstorage', '0'
 
 install_requires = ['setuptools', 'requests',
-                    'zc.zk [static]', 'zc.zkzeo']
+                    'zc.zk [static]', 'zc.zkzeo', 'boto']
 extras_require = dict(
     test=['manuel', 'mock', 'zope.testing', 'bobo', 'zc.wsgidriver'],
     zodb3 = ['ZODB3'],
@@ -22,6 +22,8 @@ extras_require = dict(
     )
 
 entry_points = """
+[console_scripts]
+process_s3_blob_removes = zc.s3blobstorage.pack:main
 """
 
 from setuptools import setup

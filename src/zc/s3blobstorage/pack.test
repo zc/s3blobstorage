@@ -1,0 +1,147 @@
+There's a script for packing s3 blobs.  It scans a given s3 bucket for
+keys of the form ``.removedTIMESTAMP.blob`` (where TIMESTAMP is a string
+of digits representing a Unix timestamp).
+
+The script takes a bucket name and:
+
+- A prefix, which defaults to an empty string,
+
+- A scan level
+
+- a pack days, which defaults to 0, and which specifies the minimum
+  age of removed keys to process, based on their timestamps.
+
+You'll want to orgnanize your blob buckets into folders, so you can
+have blobs for multiple storages in the same bucket.  You'll probably
+either have one level of folders, with a folder per storage, or a
+two-level structure with a folder for customer, or application, and a
+subfolder for each database within that customer or application.
+
+Let's look at an example.  We have an s3 bucket with some blob data in
+it:
+
+    >>> import boto.s3.connection
+    >>> conn = boto.s3.connection.S3Connection()
+    >>> bucket = conn.get_bucket('blobs')
+
+    >>> for prefix in bucket.list('', '/'):
+    ...     print prefix.name
+    ...     for prefix2 in bucket.list(prefix.name, '/'):
+    ...         print ' ', prefix2.name
+    foo/
+      foo/bar/
+      foo/baz/
+    my/
+      my/blobs/
+
+    >>> for key in bucket.list('my/blobs'):
+    ...     print key.key
+    ...     for line in key.get_contents_as_string().strip().split('\n'):
+    ...         print ' '+line
+    ... # doctest: +ELLIPSIS
+    my/blobs/.removed1380710121.blob
+     000000000012d68703a1c85b59999999
+     000000000012d68803a1c85b59999999
+     ...
+     000000000012d68f03a1c85b59999999
+     000000000012d69003a1c85b59999999
+     000000000012d689
+    my/blobs/.removed1380882921.blob
+     000000000012d68703a1cdfb59999999
+     000000000012d68803a1cdfb59999999
+     ...
+     000000000012d68f03a1d39b59999999
+     000000000012d69003a1d39b59999999
+     000000000012d68b
+    my/blobs/000000000012d68703a1c85b59999999.blob
+     000000000012d68703a1c85b59999999.blob data
+    my/blobs/000000000012d68703a1cdfb59999999.blob
+     000000000012d68703a1cdfb59999999.blob data
+    my/blobs/000000000012d68703a1d39b59999999.blob
+     000000000012d68703a1d39b59999999.blob data
+    ...
+    my/blobs/000000000012d69003a1f55b59999999.blob
+     000000000012d69003a1f55b59999999.blob data
+
+    >>> len(bucket)
+    276
+
+We call the pack script, telling it to pack 7 days in the past.  Note
+that it counts back from midnight *local* time.
+
+    >>> del conn.calls[:]
+    >>> import zc.s3blobstorage.pack
+    >>> zc.s3blobstorage.pack.main(['blobs', '-l2', '-d7'])
+
+    >>> conn.show_called() # doctest: +ELLIPSIS
+    get_bucket blobs
+    bucket blobs list '' /
+    bucket blobs list foo/ /
+    bucket blobs list foo/bar/.removed ''
+    bucket blobs key foo/bar/.removed1380710121.blob get_contents_as_file
+    bucket blobs get_key foo/bar/000000000012d68703a1c85b59999999.blob
+    bucket blobs key foo/bar/000000000012d68703a1c85b59999999.blob delete
+    bucket blobs get_key foo/bar/000000000012d68803a1c85b59999999.blob
+    bucket blobs key foo/bar/000000000012d68803a1c85b59999999.blob delete
+    ...
+    bucket blobs get_key foo/bar/000000000012d69003a1c85b59999999.blob
+    bucket blobs key foo/bar/000000000012d69003a1c85b59999999.blob delete
+    bucket blobs list foo/bar/000000000012d689 ''
+    bucket blobs key foo/bar/000000000012d68903a1cdfb59999999.blob delete
+    ...
+    bucket blobs key foo/bar/000000000012d68903a1f55b59999999.blob delete
+    bucket blobs key foo/bar/.removed1380710121.blob delete
+    bucket blobs list foo/baz/.removed ''
+    bucket blobs key foo/baz/.removed1380710121.blob get_contents_as_file
+    bucket blobs get_key foo/baz/000000000012d68703a1c85b59999999.blob
+    bucket blobs key foo/baz/000000000012d68703a1c85b59999999.blob delete
+    bucket blobs get_key foo/baz/000000000012d68803a1c85b59999999.blob
+    bucket blobs key foo/baz/000000000012d68803a1c85b59999999.blob delete
+    ...
+    bucket blobs get_key foo/baz/000000000012d69003a1c85b59999999.blob
+    bucket blobs key foo/baz/000000000012d69003a1c85b59999999.blob delete
+    bucket blobs list foo/baz/000000000012d689 ''
+    bucket blobs key foo/baz/000000000012d68903a1cdfb59999999.blob delete
+    ...
+    bucket blobs key foo/baz/000000000012d68903a1f55b59999999.blob delete
+    bucket blobs key foo/baz/.removed1380710121.blob delete
+    bucket blobs list my/ /
+    bucket blobs list my/blobs/.removed ''
+    ...
+    bucket blobs key my/blobs/.removed1380710121.blob delete
+
+    >>> len(bucket)
+    219
+
+If we call again, there won't be anything to do:
+
+    >>> del conn.calls[:]
+    >>> zc.s3blobstorage.pack.main(['blobs', '-l2', '-d7'])
+
+    >>> conn.show_called() # doctest: +ELLIPSIS
+    get_bucket blobs
+    bucket blobs list '' /
+    bucket blobs list foo/ /
+    bucket blobs list foo/bar/.removed ''
+    bucket blobs list foo/baz/.removed ''
+    bucket blobs list my/ /
+    bucket blobs list my/blobs/.removed ''
+
+    >>> len(bucket)
+    219
+
+If we don't pass days, then all .removed files will be processed:
+
+    >>> del conn.calls[:]
+    >>> zc.s3blobstorage.pack.main(['blobs', '-l2'])
+
+    >>> conn.show_called() # doctest: +ELLIPSIS
+    get_bucket blobs
+    bucket blobs list '' /
+    bucket blobs list foo/ /
+    bucket blobs list foo/bar/.removed ''
+    bucket blobs key foo/bar/.removed1380882921.blob get_contents_as_file
+    ...
+
+    >>> len(bucket)
+    144
