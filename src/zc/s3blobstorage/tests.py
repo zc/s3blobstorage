@@ -11,6 +11,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
+
 from zope.testing import setupstack
 import doctest
 import manuel.capture
@@ -41,6 +42,7 @@ class S3Connection:
     def get_bucket(self, name):
         self.called('get_bucket', name)
         return Bucket(self, name, self.data[name])
+
 
 class Bucket:
 
@@ -79,6 +81,7 @@ class Bucket:
     def __len__(self):
         return len(self.data)
 
+
 class Key:
 
     def __init__(self, bucket, key=None):
@@ -104,14 +107,17 @@ class Key:
         self.called('delete')
         del self.bucket.data[self.key]
 
+
 class Prefix:
 
     def __init__(self, name):
         self.name = name
 
+
 def setUpClient(test):
     setupstack.setUpDirectory(test)
     zc.zk.testing.setUp(test)
+
 
 def setUpFile(test):
     setupstack.setUpDirectory(test)
@@ -120,6 +126,7 @@ def setUpFile(test):
     def time():
         return test.globs['now']
     setupstack.context_manager(test, mock.patch("time.time", side_effect=time))
+
 
 def setUpPack(test):
     first_oid = 1234567
@@ -141,7 +148,6 @@ def setUpPack(test):
                 rdata += key[:-5]+"\n"
             for prefix in prefixes:
                 blobs[prefix + key] = key+' data'
-
 
     conn = S3Connection(dict(blobs=blobs))
     setupstack.context_manager(

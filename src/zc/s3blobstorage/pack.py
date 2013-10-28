@@ -1,7 +1,7 @@
 
 ##############################################################################
 #
-# Copyright (c) 2011 Zope Foundation and Contributors.
+# Copyright (c) 2013 Zope Foundation and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -14,11 +14,13 @@
 ##############################################################################
 """ %prog [options] bucket_name
 """
+
 import boto.s3.connection
 import optparse
 import sys
 import tempfile
 import time
+
 
 parser = optparse.OptionParser(__doc__)
 parser.add_option("-p", "--prefix", default="")
