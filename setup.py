@@ -11,7 +11,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-name, version = 'zc.s3blobstorage', '0'
+name, version = 'zc.s3blobstorage', '0.2.0'
 
 install_requires = ['setuptools', 'requests',
                     'zc.zk [static]', 'zc.zkzeo', 'boto']
@@ -44,7 +44,7 @@ setup(
     install_requires = install_requires,
     zip_safe = False,
     entry_points=entry_points,
-    package_data = {name: ['*.txt', '*.test', '*.html']},
+    package_data = {name: ['*.txt', '*.test', '*.html', "*.rst", "*.xml"]},
     extras_require = extras_require,
     tests_require = extras_require['test'],
     test_suite = name+'.tests.test_suite',
