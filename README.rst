@@ -27,13 +27,15 @@ Changes
 ==================
 
 When configuring a client, strip /providers from the ZooKeeper path,
-if provided. This will make it easier to use with old buildout
+if provided.  This will make it easier to use with old buildout
 recipes.
+
 
 0.1.1 (2013-10-24)
 ==================
 
 Fixed packaging bug.
+
 
 0.1.0 (2013-10-23)
 ==================
