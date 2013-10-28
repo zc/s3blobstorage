@@ -7,6 +7,9 @@ import ZEO.ServerStub
 import ZODB.config
 import ZODB.POSException
 
+
+PROVIDERS = '/providers'
+
 class ServerError(Exception):
     pass
 
@@ -70,10 +73,10 @@ def DB(*args, **kw):
 
 def ZKClientStorage(zkaddr, path, *args, **kw):
     zk = zc.zk.ZooKeeper(zkaddr)
-    ppath = path + '/providers'
+    ppath = path + PROVIDERS
     addresses = zk.children(ppath)
 
-    blob_addresses = zk.children(path+'/blobs/providers')
+    blob_addresses = zk.children(path + '/blobs' + PROVIDERS)
     blob_servers = []
 
     @blob_addresses
@@ -111,8 +114,8 @@ class ZKConfig(ZODB.config.BaseConfig):
         if not isinstance(path, basestring) or not path[0] == '/':
             raise TypeError("server must be a ZooKeeper path, %r" % path)
 
-        if path.endswith('/providers'):
-            path = path[:-10]
+        if path.endswith(PROVIDERS):
+            path = path.rsplit(PROVIDERS, 1)[0]
 
         options = dict(
             blob_dir=self.config.blob_dir,
@@ -141,4 +144,3 @@ class ZKConfig(ZODB.config.BaseConfig):
             options['client_label'] = self.config.client_label
 
         return ZKClientStorage(self.config.zookeeper, path, **options)
-
