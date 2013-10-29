@@ -1,0 +1,87 @@
+Blob Server monitor
+===================
+
+We have a simple blob server monitor, in the form of a nagios plugin.
+
+It takes a ZooKeeper connection string, path and a host-name or ip.
+
+It checks to see that:
+
+- There is a child of the path with a name of the form::
+
+    HOSTNAMEORIP:PORT
+
+- That it's able to fetch::
+
+    http://HOSTNAMEORIP:PORT/ruok
+
+Note that configuration errors like bad connection strings or paths
+cause the monitor itself to fail, as they aren't handled by the
+monitor.
+
+Faux blob server:
+
+    >>> import os, zc.wsgidriver, bobo
+    >>> app = bobo.Application(bobo_resources = "zc.s3blobstorage.tests")
+    >>> blob_server_port = zc.wsgidriver.start_server(app)
+
+
+Error if address isn't registered
+---------------------------------
+
+    >>> import pkg_resources
+    >>> main = pkg_resources.load_entry_point(
+    ...     "zc.s3blobstorage", "console_scripts", "s3-blob-server-monitor")
+
+    >>> connection_string = "zookeeper.example.com:2181"
+    >>> main([connection_string, "/fooservice/providers", "localhost"])
+    Server not registered
+    2
+
+OK if registered
+----------------
+
+    >>> import zc.zk
+    >>> zk = zc.zk.ZK(connection_string)
+    >>> zk.register_server("/fooservice/providers",
+    ...                    "localhost:%s" % blob_server_port)
+    >>> main([connection_string, "/fooservice/providers", "localhost"])
+
+not OK if too mant services regsitered
+--------------------------------------
+
+    >>> zk.register_server("/fooservice/providers",
+    ...                    "localhost:%s" % (blob_server_port+1))
+    >>> main([connection_string, "/fooservice/providers", "localhost"])
+    Too many servers registered
+    2
+
+    >>> _ = zk.delete(
+    ...     "/fooservice/providers/localhost:%s" % (blob_server_port+1))
+
+not ok if ruok errors
+---------------------
+
+    >>> import mock
+    >>> with mock.patch("zc.s3blobstorage.tests.test_response",
+    ...                 side_effect = lambda : xxx):
+    ...     main([connection_string, "/fooservice/providers", "localhost"])
+    ... # doctest: +ELLIPSIS
+    bad response from 'http://localhost:.../ruok'
+    2
+
+not ok if ruok returns something unexpected
+-------------------------------------------
+
+    >>> with mock.patch("zc.s3blobstorage.tests.test_response",
+    ...                 side_effect = lambda : "ho world"):
+    ...     main([connection_string, "/fooservice/providers", "localhost"])
+    ... # doctest: +ELLIPSIS
+    bad response from 'http://localhost:.../ruok'
+    2
+
+.. cleanup
+
+    >>> import requests
+    >>> _ = requests.get('http://localhost:%s/stop-testing-server'
+    ...                  % blob_server_port)

@@ -24,6 +24,7 @@ extras_require = dict(
 entry_points = """
 [console_scripts]
 process_s3_blob_removes = zc.s3blobstorage.pack:main
+s3-blob-server-monitor = zc.s3blobstorage.servermonitor:main
 """
 
 from setuptools import setup
