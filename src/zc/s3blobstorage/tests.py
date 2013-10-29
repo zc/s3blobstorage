@@ -13,6 +13,7 @@
 ##############################################################################
 
 from zope.testing import setupstack
+import bobo
 import doctest
 import manuel.capture
 import manuel.doctest
@@ -24,6 +25,12 @@ import zc.zk.testing
 import ZODB.utils
 import ZODB.TimeStamp
 
+def test_response(): # separate function for mock
+    return "imok"
+
+@bobo.query("/ruok")
+def ruok():
+    return test_response()
 
 class S3Connection:
 
@@ -166,7 +173,7 @@ def test_suite():
             setUp=setUpFile, tearDown=setupstack.tearDown),
         manuel.testing.TestSuite(
             manuel.doctest.Manuel() + manuel.capture.Manuel(),
-            'client.test',
+            'client.test', 'servermonitor.test',
             setUp=setUpClient, tearDown=setupstack.tearDown),
         manuel.testing.TestSuite(
             manuel.doctest.Manuel() + manuel.capture.Manuel(),
