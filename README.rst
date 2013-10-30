@@ -23,6 +23,9 @@ This project provides:
 Changes
 *******
 
+0.3.0 (2013-10-29)
+==================
+
 Added a nagios plugin for monitoring blob servers.
 
 0.2.0 (2013-10-25)
