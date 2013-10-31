@@ -30,3 +30,5 @@ def main(args=None):
 
     if r.status_code != 200 or r.text != "imok":
         return error("bad response from %r" % url)
+
+    print "cool"
