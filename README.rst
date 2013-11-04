@@ -23,6 +23,9 @@ This project provides:
 Changes
 *******
 
+0.3.1 (2013-11-04)
+==================
+
 Fixed: monitor didn't output anything on success
 
 0.3.0 (2013-10-29)
