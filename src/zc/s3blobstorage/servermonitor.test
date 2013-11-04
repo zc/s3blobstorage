@@ -46,6 +46,7 @@ OK if registered
     >>> zk.register_server("/fooservice/providers",
     ...                    "localhost:%s" % blob_server_port)
     >>> main([connection_string, "/fooservice/providers", "localhost"])
+    cool
 
 not OK if too many services regsitered
 --------------------------------------
