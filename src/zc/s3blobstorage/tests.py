@@ -123,6 +123,13 @@ class Prefix:
 
 def setUpClient(test):
     setupstack.setUpDirectory(test)
+    def print_bytes(bytes):
+        print '_check_blob_size(%s)' % bytes
+    setupstack.context_manager(
+        test,
+        mock.patch("ZEO.ClientStorage.ClientStorage._check_blob_size",
+                   side_effect = print_bytes),
+        )
     zc.zk.testing.setUp(test)
 
 

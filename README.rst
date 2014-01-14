@@ -23,6 +23,12 @@ This project provides:
 Changes
 *******
 
+Fixed: Blobs weren't removed from blob caches often enough.
+
+       This was because the client didn't call an API that the
+       base class does on download to keep track of bytes written to
+       the cache.
+
 0.3.1 (2013-11-04)
 ==================
 
