@@ -55,11 +55,19 @@ class ClientStorage(ZEO.ClientStorage.ClientStorage):
             dl_filename = blob_filename + '.dl'
             assert not os.path.exists(dl_filename)
             f = open(dl_filename, 'wb')
+            bytes = 0
             for data in r.iter_content(block_size):
                     f.write(data)
+                    bytes += len(data)
+
             f.close()
             os.rename(dl_filename, blob_filename)
             os.chmod(blob_filename, stat.S_IREAD)
+
+            # TODO: Gaaaaa, this is a lot of underware.
+            self._blob_data_bytes_loaded += bytes
+            self._check_blob_size(self._blob_data_bytes_loaded)
+
             return
 
         if not connected:

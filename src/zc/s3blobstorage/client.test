@@ -37,12 +37,20 @@ Create a blob cache directory and start a web server on it:
     >>> db = ZODB.DB(client)
     >>> with db.transaction() as conn:
     ...     conn.root.b1 = ZODB.blob.Blob("version 1")
+    _check_blob_size(9)
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open("w") as f:
     ...        f.write("version 2")
+    _check_blob_size(18)
     >>> db.close()
     >>> import shutil
     >>> shutil.rmtree('cblobs')
+
+Note that we've instrumented the ClientStorage _check_blob_size
+internal API.  It's used to trigger blob cache management.
+
+It's important that it gets called when we download blobs from a blob
+server.
 
 Move the blobs to a separate "cache" to mimic the blob server:
 
@@ -57,13 +65,17 @@ Create a new client and verify that it can get and update blobs:
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open() as f:
     ...        print f.read()
+    _check_blob_size(9)
     version 2
+
+Look! _check_blob_size was called.
 
     >>> len([n for n in os.listdir('blobs') if n.endswith('.blob')])
     0
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open("w") as f:
     ...        f.write("version 3")
+    _check_blob_size(18)
     >>> len([n for n in os.listdir('blobs') if n.endswith('.blob')])
     1
 
@@ -106,6 +118,7 @@ We only provide the database node. The subnodes are implied.
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open() as f:
     ...        print f.read()
+    _check_blob_size(9)
     version 3
 
 We can change the server address:
@@ -131,6 +144,7 @@ We can change the server address:
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open() as f:
     ...        print f.read()
+    _check_blob_size(18)
     version 3
 
     >>> db.close()
@@ -160,6 +174,7 @@ We can configure a zookeeper-based client using ZConfig::
     >>> with db.transaction() as conn:
     ...     with conn.root.b1.open() as f:
     ...        print f.read()
+    _check_blob_size(9)
     version 3
 
 zkzeo made us specify providers.  We still can::

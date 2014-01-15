@@ -2,3 +2,4 @@
 bin
 develop-eggs
 dist
+src/zc.s3blobstorage.egg-info/
