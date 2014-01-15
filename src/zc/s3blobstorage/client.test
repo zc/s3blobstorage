@@ -47,7 +47,7 @@ Create a blob cache directory and start a web server on it:
     >>> shutil.rmtree('cblobs')
 
 Note that we've instrumented the ClientStorage _check_blob_size
-internal API.  It's used to tigger blob cache management.
+internal API.  It's used to trigger blob cache management.
 
 It's important that it gets called when we download blobs from a blob
 server.
