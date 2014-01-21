@@ -23,6 +23,9 @@ This project provides:
 Changes
 *******
 
+0.3.2 (2014-01-21)
+==================
+
 Fixed: Blobs weren't removed from blob caches often enough.
 
        This was because the client didn't call an API that the
