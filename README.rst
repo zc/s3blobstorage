@@ -2,7 +2,7 @@ S3 blob storage support
 =======================
 
 This package provides Python storages that work with the S3 blob
-caching server, https://bitbucket.org/zc/s3blobserver.  See that
+caching server, https://github.com/zc/s3blobserver.  See that
 project for a description of the architecture.
 
 This project provides:
